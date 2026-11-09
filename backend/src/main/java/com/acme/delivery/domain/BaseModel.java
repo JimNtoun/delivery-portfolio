@@ -3,7 +3,7 @@ package com.acme.delivery.domain;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -23,3 +23,4 @@ public abstract class BaseModel implements Serializable {
     @Column(name = "id")
     private Long id;
 }
+

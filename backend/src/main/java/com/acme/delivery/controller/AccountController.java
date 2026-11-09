@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.constraints.Email;
+import jakarta.validation.constraints.Email;
 import java.util.NoSuchElementException;
 
 
@@ -42,3 +42,4 @@ public class AccountController extends BaseController<Account> {
         return ResponseEntity.ok(ApiResponse.<Account>builder().data(byPhoneNumber).build());
     }
 }
+

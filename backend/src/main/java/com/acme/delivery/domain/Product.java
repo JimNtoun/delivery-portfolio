@@ -2,11 +2,11 @@ package com.acme.delivery.domain;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.sun.istack.NotNull;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 @Getter
@@ -40,3 +40,5 @@ public class Product extends BaseModel {
     @JsonIgnore
     private Store store;
 }
+
+

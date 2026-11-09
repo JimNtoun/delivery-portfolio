@@ -7,8 +7,8 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -114,3 +114,4 @@ public class Store extends BaseModel {
         @ManyToOne(fetch = FetchType.EAGER, optional = false)
         private StoreCategory storeCategory;
 }
+

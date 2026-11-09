@@ -30,12 +30,11 @@ spring:
       ddl-auto:  create-drop
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-      use-new-id-generator-mappings: true
     open-in-view: false
     properties:
       hibernate:
         batch_versioned_data: true
-        dialect: org.hibernate.dialect.Oracle12cDialect
+        dialect: org.hibernate.dialect.OracleDialect
         jdbc:
           batch_size: 100
         format_sql: true

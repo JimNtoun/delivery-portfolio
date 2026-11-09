@@ -3,8 +3,8 @@ package com.acme.delivery.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Set;
@@ -50,3 +50,4 @@ public class Order extends BaseModel {
     private BigDecimal cost;
 
 }
+
