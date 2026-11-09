@@ -1,0 +1,54 @@
+<mat-toolbar color="primary">
+  <span><a [routerLink]="['/userhome']"><button class="btn btn-primary" > Home </button></a>
+  </span>
+  <span class="example-spacer"></span>
+  <button mat-raised-button="warn"></button>
+</mat-toolbar>
+<div class="d-flex justify-content-center">
+</div>
+<table class="table" id='tab'>
+  <thead>
+    <tr>
+        <th scope="col">{{ name }}</th>
+    </tr>
+</thead>
+    <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Price</th>
+            <th scope="col"></th>
+            <th scope="col">Total</th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let x of response.data.products">
+            <td>{{ x.productName }}</td>
+            <td>{{ x.price }}</td>
+            <td><button (click)="additemtoCart(x.id, x.price)">+1</button></td>
+            <td>{{ cart.get(x.id) }}</td>
+            <td *ngIf="cart.has(x.id)"><button (click)="removeitemfromCart(x.id, x.price)">-1</button></td>
+        </tr>
+    </tbody>
+  </table>
+  <section>
+    <div class="example-button-row">
+      <div *ngIf="cartisnotEmpty()">
+      <button [routerLink]="['/cart', response.data.name, acc_email, cost]" mat-raised-button color="primary">Go to cart!</button>
+      </div>
+    </div>
+  </section>
+  <tr></tr>
+  <section>
+    <div class="example-button-row">
+      <div *ngIf="cartisnotEmpty()">
+      <button (click)="emptyCart()" mat-raised-button color="primary">Empty cart!</button>
+      </div>
+    </div>
+  </section>
+  <tr></tr>
+  <section>
+    <div class="example-button-row">
+      <button [routerLink]="['/userhome']" mat-raised-button color="primary">Go back!</button>
+    </div>
+  </section>
