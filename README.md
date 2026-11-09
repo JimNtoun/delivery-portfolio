@@ -13,7 +13,7 @@ See [docs/BASELINE.md](docs/BASELINE.md) for the initial state and subsequent co
 
 ## Structure
 
-- `backend/`: Java 17, Spring Boot 2.7.3, Maven, JPA, local H2 profile.
+- `backend/`: Java 17, Spring Boot 4.0.9, Maven, JPA, local H2 profile.
 - `frontend/`: Angular 14, Angular Material, Bootstrap.
 - `scripts/`: environment selection and read-only baseline smoke checks.
 - `docs/`: known limitations, validation and roadmap.
@@ -49,7 +49,8 @@ powershell -NoProfile -File .\scripts\smoke-test.ps1
 
 This verifies read-only catalog/report endpoints, a menu with products, and the Angular HTML shell.
 It does **not** execute Angular in a browser, test checkout or certify security.
-The project currently has no application unit/integration tests.
+The backend now includes three real-HTTP migration regression tests (BackendMigrationTest).
+Run backend\build-local.cmd to execute them as part of the build.
 
 To check a newly built backend while the original is running:
 

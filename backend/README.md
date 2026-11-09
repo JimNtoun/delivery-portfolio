@@ -1,6 +1,6 @@
 # Delivery App — local setup
 
-Java 17 / Spring Boot 2.7.3 REST backend for stores, accounts and delivery orders.
+Java 17 / Spring Boot 4.0.9 REST backend for stores, accounts and delivery orders.
 The original archive contains no frontend. The root URL `/` does not have a web page.
 
 ## Run on this computer
@@ -42,7 +42,7 @@ DTOs and automated tests should be reviewed before publishing it as a complete a
 
 ## Verified locally
 
-Build completed successfully with Java 17.0.18. The original archive has no automated tests.
+Build completed successfully with Java 17.0.18. The original archive had no automated tests. The migrated backend includes BackendMigrationTest; see ../docs/BACKEND-UPGRADE.md.
 The following HTTP smoke checks returned 200 with the seeded demo data:
 
 | Endpoint | Result |

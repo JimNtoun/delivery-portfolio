@@ -30,5 +30,3 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     @Query(name = "Store.top10Products", nativeQuery = true)
     List<KeyValues<String, String, String>> findTop10Products();
 }
-
-

@@ -114,4 +114,3 @@ public class Store extends BaseModel {
         @ManyToOne(fetch = FetchType.EAGER, optional = false)
         private StoreCategory storeCategory;
 }
-

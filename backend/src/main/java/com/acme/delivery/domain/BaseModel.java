@@ -23,4 +23,3 @@ public abstract class BaseModel implements Serializable {
     @Column(name = "id")
     private Long id;
 }
-

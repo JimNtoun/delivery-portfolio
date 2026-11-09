@@ -40,5 +40,3 @@ public class Product extends BaseModel {
     @JsonIgnore
     private Store store;
 }
-
-

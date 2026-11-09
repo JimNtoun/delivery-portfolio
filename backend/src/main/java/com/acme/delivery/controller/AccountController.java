@@ -42,4 +42,3 @@ public class AccountController extends BaseController<Account> {
         return ResponseEntity.ok(ApiResponse.<Account>builder().data(byPhoneNumber).build());
     }
 }
-

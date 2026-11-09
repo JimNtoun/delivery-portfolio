@@ -19,4 +19,3 @@ public abstract class BaseComponent {
         logger.trace("{} is about to be destroyed.", getClass().getName());
     }
 }
-

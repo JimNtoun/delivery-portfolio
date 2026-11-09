@@ -25,4 +25,3 @@ public class ProductCategory extends BaseModel {
     @NotNull
     private String description;
 }
-

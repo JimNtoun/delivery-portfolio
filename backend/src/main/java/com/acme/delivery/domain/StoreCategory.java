@@ -23,4 +23,3 @@ public class StoreCategory extends BaseModel{
     @NotNull
     private String categoryName;
 }
-

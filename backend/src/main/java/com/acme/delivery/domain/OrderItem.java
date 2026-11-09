@@ -35,4 +35,3 @@ public class OrderItem extends BaseModel {
     @JsonIgnore
     private Order order;
 }
-

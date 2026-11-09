@@ -50,4 +50,3 @@ public class Order extends BaseModel {
     private BigDecimal cost;
 
 }
-
