@@ -73,4 +73,38 @@ class BackendMigrationTest {
         assertThat(JsonPath.<List<?>>read(get("/stores/reportFamousStoresPerCategory/1"), "$.data"))
                 .isNotEmpty();
     }
+
+    @Test
+    void passwordsAreExcludedFromAccountsAndOrders() throws Exception {
+        String accounts = get("/accounts");
+
+        assertThat(
+                JsonPath.<List<?>>read(accounts, "$.data")
+        ).isNotEmpty();
+
+        assertThat(
+                JsonPath.<List<?>>read(accounts, "$..password")
+        ).isEmpty();
+
+        String orders = get("/orders");
+
+        assertThat(
+                JsonPath.<List<?>>read(orders, "$.data")
+        ).isNotEmpty();
+
+        assertThat(
+                JsonPath.<List<?>>read(orders, "$..password")
+        ).isEmpty();
+
+        String account = get("/accounts?email=dimitris@gmail.com");
+
+        assertThat(
+                JsonPath.<String>read(account, "$.data.email")
+        ).isEqualTo("dimitris@gmail.com");
+
+        assertThat(
+                JsonPath.<List<?>>read(account, "$..password")
+        ).isEmpty();
+    }
+
 }

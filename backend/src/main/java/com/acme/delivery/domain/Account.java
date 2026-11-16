@@ -1,6 +1,7 @@
 package com.acme.delivery.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -8,6 +9,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.util.List;
 import java.util.Set;
+
 
 @Getter
 @Setter
@@ -26,6 +28,8 @@ public class Account extends BaseModel {
 
     @Column(length = 30, nullable = false)
     @NotNull
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @ToString.Exclude
     private String password;
 
     @Column(name = "email", nullable = false, unique = true, length = 30)
