@@ -107,4 +107,83 @@ class BackendMigrationTest {
         ).isEmpty();
     }
 
+    @Test
+    void accountReadEndpointsReturnTheExpectedResponseFields() throws Exception {
+        List<Map<String, Object>> accounts =
+                JsonPath.read(get("/accounts"), "$.data");
+
+        assertThat(accounts).isNotEmpty();
+
+        for (Map<String, Object> account : accounts) {
+            assertThat(account.keySet()).containsExactlyInAnyOrder(
+                    "id",
+                    "username",
+                    "email",
+                    "phoneNumber",
+                    "age",
+                    "address",
+                    "city"
+            );
+        }
+
+        Map<String, Object> first = accounts.get(0);
+
+        List<String> paths = List.of(
+                "/accounts/" + first.get("id"),
+                "/accounts?email=" + first.get("email"),
+                "/accounts?phoneNumber=" + first.get("phoneNumber")
+        );
+
+        for (String path : paths) {
+            Map<String, Object> detail =
+                    JsonPath.read(get(path), "$.data");
+
+            assertThat(detail)
+                    .as("Account response from %s", path)
+                    .isEqualTo(first);
+        }
+    }
+    @Test
+    void accountCreationSupportsSingleAndListRequests() throws Exception {
+        String singleBody = """
+                {"username":"SingleUser","password":"test-only-secret",
+                 "email":"single@example.test","phoneNumber":"6900000001",
+                 "age":30,"address":"Demo Street 1","city":"Athens"}
+                """;
+        String single = postAccount(singleBody, false);
+        assertThat(JsonPath.<String>read(single, "$.data.email")).isEqualTo("single@example.test");
+        assertThat(JsonPath.<List<?>>read(single, "$..password")).isEmpty();
+        Number id = JsonPath.read(single, "$.data.id");
+        assertThat(JsonPath.<String>read(get("/accounts/" + id), "$.data.email"))
+                .isEqualTo("single@example.test");
+
+        String batchBody = """
+                [{"username":"BatchUserOne","password":"test-only-secret",
+                  "email":"batch.one@example.test","phoneNumber":"6900000002",
+                  "age":30,"address":"Demo Street 2","city":"Athens"},
+                 {"username":"BatchUserTwo","password":"test-only-secret",
+                  "email":"batch.two@example.test","phoneNumber":"6900000003",
+                  "age":31,"address":"Demo Street 3","city":"Athens"}]
+                """;
+        String batch = postAccount(batchBody, true);
+        assertThat(JsonPath.<List<?>>read(batch, "$.data")).hasSize(2);
+        assertThat(JsonPath.<List<String>>read(batch, "$.data[*].email"))
+                .containsExactlyInAnyOrder("batch.one@example.test", "batch.two@example.test");
+        assertThat(JsonPath.<List<?>>read(batch, "$..password")).isEmpty();
+    }
+
+    private String postAccount(String body, boolean batch) throws Exception {
+        String port = environment.getRequiredProperty("local.server.port");
+        var builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/accounts"))
+                .header("Content-Type", "application/json")
+                .timeout(java.time.Duration.ofSeconds(15));
+        if (batch) {
+            builder.header("content", "list");
+        }
+        var request = builder.POST(HttpRequest.BodyPublishers.ofString(body)).build();
+        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertThat(response.statusCode()).as("POST /accounts (batch=%s): %s", batch, response.body())
+                .isEqualTo(201);
+        return response.body();
+    }
 }

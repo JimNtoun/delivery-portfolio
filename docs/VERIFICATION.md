@@ -31,3 +31,17 @@ Hikari keepalive/maxLifetime settings. They did not prevent startup, tests or sh
 Final executable-JAR check: the Spring Boot 4.0.9 JAR started on 127.0.0.1:8081 and
 all seven baseline smoke checks passed after seed initialization. The frontend-shell
 check used the existing server on 4200. The temporary JVM was stopped after verification.
+
+## PostgreSQL and account API preparation
+
+The guided PostgreSQL setup applied V1 and the optional demo V2 successfully.
+The user verified unchanged counts (1 account, 1 store, 2 products, 1 order, 2 items)
+after restarting both the app and the PostgreSQL container. This is a manual check,
+not a Testcontainers result.
+
+A fresh Java 17 offline Maven verify run completed successfully during commit preparation:
+7 tests, 0 failures, 0 errors, 0 skipped (6 real-HTTP H2 tests and 1 mapper unit test).
+The added POST regression checks cover both a single Account request and the list route
+selected by `content: list`, confirm persistence through a GET, and assert password omission.
+The batch header typo was corrected from `content-list` to `content=list`.
+Intermediate commit snapshots were organized by dependency but were not each rebuilt separately.
