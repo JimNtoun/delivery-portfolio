@@ -6,11 +6,12 @@ import com.acme.delivery.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-
+import org.springframework.context.annotation.Profile;
 import java.math.BigDecimal;
 
 
 @Component
+@Profile("local")
 @RequiredArgsConstructor
 @org.springframework.core.annotation.Order(1)
 public class BasicSamplerContentCreator extends BaseComponent implements CommandLineRunner {
