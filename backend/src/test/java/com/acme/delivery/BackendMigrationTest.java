@@ -158,13 +158,30 @@ class BackendMigrationTest {
                 .isEqualTo("single@example.test");
 
         String batchBody = """
-                [{"username":"BatchUserOne","password":"test-only-secret",
-                  "email":"batch.one@example.test","phoneNumber":"6900000002",
-                  "age":30,"address":"Demo Street 2","city":"Athens"},
-                 {"username":"BatchUserTwo","password":"test-only-secret",
-                  "email":"batch.two@example.test","phoneNumber":"6900000003",
-                  "age":31,"address":"Demo Street 3","city":"Athens"}]
-                """;
+        {
+          "accounts": [
+            {
+              "username":"BatchUserOne",
+              "password":"test-only-secret",
+              "email":"batch.one@example.test",
+              "phoneNumber":"6900000002",
+              "age":30,
+              "address":"Demo Street 2",
+              "city":"Athens"
+            },
+            {
+              "username":"BatchUserTwo",
+              "password":"test-only-secret",
+              "email":"batch.two@example.test",
+              "phoneNumber":"6900000003",
+              "age":31,
+              "address":"Demo Street 3",
+              "city":"Athens"
+            }
+          ]
+        }
+        """;
+
         String batch = postAccount(batchBody, true);
         assertThat(JsonPath.<List<?>>read(batch, "$.data")).hasSize(2);
         assertThat(JsonPath.<List<String>>read(batch, "$.data[*].email"))
@@ -189,22 +206,31 @@ class BackendMigrationTest {
 
     @Test
     void invalidAccountRequestsAreRejectedWithoutSaving() throws Exception {
-        String validBody = """
+        String validAccount = """
             {
-              "username":"ValidationUser",
+              "username":"BatchValid",
               "password":"test-only-secret",
-              "email":"validation@example.test",
-              "phoneNumber":"6900000009",
+              "email":"batch.valid@example.test",
+              "phoneNumber":"6900000011",
               "age":30,
-              "address":"Demo Street 9",
+              "address":"Demo Street 11",
               "city":"Athens"
             }
             """;
 
+        String invalidAccount = validAccount
+                .replace("\"BatchValid\"", "\" \"")
+                .replace(
+                        "\"batch.valid@example.test\"",
+                        "\"batch.invalid@example.test\""
+                )
+                .replace("6900000011", "6900000012");
+
         List<String> invalidBodies = List.of(
-                validBody.replace("\"ValidationUser\"", "\" \""),
-                validBody.replace("\"validation@example.test\"", "\"not-an-email\""),
-                validBody.replace("\"age\":30,", "")
+                "{}",
+                "{\"accounts\":[]}",
+                "{\"accounts\":[null]}",
+                "{\"accounts\":[" + validAccount + "," + invalidAccount + "]}"
         );
 
         int initialCount = JsonPath.<List<?>>read(
@@ -218,6 +244,7 @@ class BackendMigrationTest {
                             URI.create("http://127.0.0.1:" + port + "/accounts")
                     )
                     .header("Content-Type", "application/json")
+                    .header("content", "list")
                     .timeout(java.time.Duration.ofSeconds(15))
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build();
@@ -227,7 +254,9 @@ class BackendMigrationTest {
                     HttpResponse.BodyHandlers.ofString()
             );
 
-            assertThat(response.statusCode()).isEqualTo(400);
+            assertThat(response.statusCode())
+                    .as("Invalid batch must be rejected: %s", response.body())
+                    .isEqualTo(400);
 
             assertThat(
                     JsonPath.<List<?>>read(get("/accounts"), "$.data")

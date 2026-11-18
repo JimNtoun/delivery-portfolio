@@ -6,6 +6,7 @@ import com.acme.delivery.mapper.AccountMapper;
 import com.acme.delivery.service.AccountService;
 import com.acme.delivery.transfer.ApiResponse;
 import com.acme.delivery.dto.CreateAccountRequest;
+import com.acme.delivery.dto.CreateAccountsRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -87,8 +88,13 @@ public class AccountController {
 
     @PostMapping(headers = "content=list")
     public ResponseEntity<ApiResponse<List<AccountResponse>>> createAll(
-            @RequestBody List<Account> accounts
+            @Valid @RequestBody CreateAccountsRequest request
     ) {
+        List<Account> accounts = request.accounts()
+                .stream()
+                .map(AccountMapper::toNewAccount)
+                .toList();
+
         List<AccountResponse> responses = accountService.createAll(accounts)
                 .stream()
                 .map(AccountMapper::toResponse)
