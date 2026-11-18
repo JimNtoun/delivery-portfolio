@@ -186,4 +186,52 @@ class BackendMigrationTest {
                 .isEqualTo(201);
         return response.body();
     }
+
+    @Test
+    void invalidAccountRequestsAreRejectedWithoutSaving() throws Exception {
+        String validBody = """
+            {
+              "username":"ValidationUser",
+              "password":"test-only-secret",
+              "email":"validation@example.test",
+              "phoneNumber":"6900000009",
+              "age":30,
+              "address":"Demo Street 9",
+              "city":"Athens"
+            }
+            """;
+
+        List<String> invalidBodies = List.of(
+                validBody.replace("\"ValidationUser\"", "\" \""),
+                validBody.replace("\"validation@example.test\"", "\"not-an-email\""),
+                validBody.replace("\"age\":30,", "")
+        );
+
+        int initialCount = JsonPath.<List<?>>read(
+                get("/accounts"), "$.data"
+        ).size();
+
+        String port = environment.getRequiredProperty("local.server.port");
+
+        for (String body : invalidBodies) {
+            var request = HttpRequest.newBuilder(
+                            URI.create("http://127.0.0.1:" + port + "/accounts")
+                    )
+                    .header("Content-Type", "application/json")
+                    .timeout(java.time.Duration.ofSeconds(15))
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            var response = client.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
+            );
+
+            assertThat(response.statusCode()).isEqualTo(400);
+
+            assertThat(
+                    JsonPath.<List<?>>read(get("/accounts"), "$.data")
+            ).hasSize(initialCount);
+        }
+    }
 }

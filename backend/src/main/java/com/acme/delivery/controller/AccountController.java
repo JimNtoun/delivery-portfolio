@@ -4,8 +4,8 @@ import com.acme.delivery.domain.Account;
 import com.acme.delivery.dto.AccountResponse;
 import com.acme.delivery.mapper.AccountMapper;
 import com.acme.delivery.service.AccountService;
-import com.acme.delivery.service.BaseService;
 import com.acme.delivery.transfer.ApiResponse;
+import com.acme.delivery.dto.CreateAccountRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -76,9 +76,10 @@ public class AccountController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<AccountResponse>> create(
-            @Valid @RequestBody Account account
+            @Valid @RequestBody CreateAccountRequest request
     ) {
-        Account savedAccount = accountService.create(account);
+        Account newAccount = AccountMapper.toNewAccount(request);
+        Account savedAccount = accountService.create(newAccount);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(toApiResponse(savedAccount));

@@ -2,6 +2,7 @@ package com.acme.delivery;
 
 import com.acme.delivery.domain.Account;
 import com.acme.delivery.dto.AccountResponse;
+import com.acme.delivery.dto.CreateAccountRequest;
 import com.acme.delivery.mapper.AccountMapper;
 import org.junit.jupiter.api.Test;
 
@@ -34,5 +35,32 @@ class AccountMapperTest {
         assertThat(response.age()).isEqualTo(30);
         assertThat(response.address()).isEqualTo("Demo Street 1");
         assertThat(response.city()).isEqualTo("Athens");
+    }
+
+    @Test
+    void mapsCreateRequestToNewAccountWithoutAnId() {
+        CreateAccountRequest request = new CreateAccountRequest(
+                "NewCustomer",
+                "test-only-secret",
+                "new@example.test",
+                "6900000010",
+                30,
+                "Demo Street 10",
+                "Athens"
+        );
+
+        Account account = AccountMapper.toNewAccount(request);
+
+        assertThat(account.getId()).isNull();
+        assertThat(account.getUsername()).isEqualTo(request.username());
+        assertThat(account.getPassword()).isEqualTo(request.password());
+        assertThat(account.getEmail()).isEqualTo(request.email());
+        assertThat(account.getPhoneNumber()).isEqualTo(request.phoneNumber());
+        assertThat(account.getAge()).isEqualTo(request.age());
+        assertThat(account.getAddress()).isEqualTo(request.address());
+        assertThat(account.getCity()).isEqualTo(request.city());
+
+        assertThat(request.toString())
+                .doesNotContain(request.password());
     }
 }
