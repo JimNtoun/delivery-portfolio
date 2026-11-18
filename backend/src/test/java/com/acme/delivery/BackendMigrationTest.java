@@ -263,4 +263,64 @@ class BackendMigrationTest {
             ).hasSize(initialCount);
         }
     }
+
+    @Test
+    void invalidBatchRequestsAreRejectedWithoutSaving() throws Exception {
+        String validAccount = """
+            {
+              "username":"BatchValid",
+              "password":"test-only-secret",
+              "email":"batch.valid@example.test",
+              "phoneNumber":"6900000011",
+              "age":30,
+              "address":"Demo Street 11",
+              "city":"Athens"
+            }
+            """;
+
+        String invalidAccount = validAccount
+                .replace("\"BatchValid\"", "\" \"")
+                .replace(
+                        "\"batch.valid@example.test\"",
+                        "\"batch.invalid@example.test\""
+                )
+                .replace("6900000011", "6900000012");
+
+        List<String> invalidBodies = List.of(
+                "{}",
+                "{\"accounts\":[]}",
+                "{\"accounts\":[null]}",
+                "{\"accounts\":[" + validAccount + "," + invalidAccount + "]}"
+        );
+
+        int initialCount = JsonPath.<List<?>>read(
+                get("/accounts"), "$.data"
+        ).size();
+
+        String port = environment.getRequiredProperty("local.server.port");
+
+        for (String body : invalidBodies) {
+            var request = HttpRequest.newBuilder(
+                            URI.create("http://127.0.0.1:" + port + "/accounts")
+                    )
+                    .header("Content-Type", "application/json")
+                    .header("content", "list")
+                    .timeout(java.time.Duration.ofSeconds(15))
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            var response = client.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
+            );
+
+            assertThat(response.statusCode())
+                    .as("Invalid batch must be rejected: %s", response.body())
+                    .isEqualTo(400);
+
+            assertThat(
+                    JsonPath.<List<?>>read(get("/accounts"), "$.data")
+            ).hasSize(initialCount);
+        }
+    }
 }
