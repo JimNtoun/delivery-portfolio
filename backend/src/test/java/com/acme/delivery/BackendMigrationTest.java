@@ -422,4 +422,73 @@ class BackendMigrationTest {
                 HttpResponse.BodyHandlers.ofString()
         );
     }
+
+    @Test
+    void validationErrorsHaveConsistentShapeAndDoNotExposePassword()
+            throws Exception {
+
+        String body = """
+            {
+              "username":" ",
+              "password":"tiny!",
+              "email":"not-an-email",
+              "phoneNumber":"6900000030",
+              "address":"Demo Street 30",
+              "city":"Athens"
+            }
+            """;
+
+        String port = environment.getRequiredProperty("local.server.port");
+
+        var request = HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port + "/accounts")
+                )
+                .header("Content-Type", "application/json")
+                .timeout(java.time.Duration.ofSeconds(15))
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        var response = client.send(
+                request,
+                HttpResponse.BodyHandlers.ofString()
+        );
+
+        assertThat(response.statusCode()).isEqualTo(400);
+
+        assertThat(
+                JsonPath.<Integer>read(response.body(), "$.apiError.httpStatus")
+        ).isEqualTo(400);
+
+        assertThat(
+                JsonPath.<String>read(response.body(), "$.apiError.description")
+        ).isEqualTo("Request validation failed");
+
+        assertThat(
+                JsonPath.<String>read(response.body(), "$.apiError.path")
+        ).isEqualTo("/accounts");
+
+        List<String> fields = JsonPath.read(
+                response.body(),
+                "$.apiError.fieldErrors[*].field"
+        );
+
+        assertThat(fields).contains(
+                "username",
+                "password",
+                "email",
+                "age"
+        );
+
+        List<Map<String, Object>> errors = JsonPath.read(
+                response.body(),
+                "$.apiError.fieldErrors"
+        );
+
+        assertThat(errors).allSatisfy(error -> {
+            assertThat((String) error.get("message")).isNotBlank();
+            assertThat(error).containsOnlyKeys("field", "message");
+        });
+
+        assertThat(response.body()).doesNotContain("tiny!");
+    }
 }
