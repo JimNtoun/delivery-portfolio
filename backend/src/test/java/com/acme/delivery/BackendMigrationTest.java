@@ -1,5 +1,6 @@
 package com.acme.delivery;
 
+import com.acme.delivery.repository.AccountRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,6 +24,8 @@ class BackendMigrationTest {
     @Autowired
     private Environment environment;
     private final HttpClient client = HttpClient.newHttpClient();
+    @Autowired
+    private AccountRepository accountRepository;
 
     private String get(String path) throws Exception {
         String port = environment.getRequiredProperty("local.server.port");
@@ -322,5 +325,101 @@ class BackendMigrationTest {
                     JsonPath.<List<?>>read(get("/accounts"), "$.data")
             ).hasSize(initialCount);
         }
+    }
+
+    @Test
+    void accountProfileUpdatePreservesIdentityAndPassword() throws Exception {
+        String createBody = """
+            {
+              "username":"UpdateUser",
+              "password":"original-secret",
+              "email":"update.source@example.test",
+              "phoneNumber":"6900000020",
+              "age":30,
+              "address":"Demo Street 20",
+              "city":"Athens"
+            }
+            """;
+
+        String created = postAccount(createBody, false);
+        long id = JsonPath.<Number>read(created, "$.data.id").longValue();
+
+        int initialCount = JsonPath.<List<?>>read(
+                get("/accounts"), "$.data"
+        ).size();
+
+        String updateBody = """
+            {
+              "username":"UpdatedUser",
+              "email":"update.target@example.test",
+              "phoneNumber":"6900000021",
+              "age":31,
+              "address":"Demo Street 21",
+              "city":"Patras"
+            }
+            """;
+
+        var updated = putAccount(id, updateBody);
+
+        assertThat(updated.statusCode()).isEqualTo(204);
+        assertThat(updated.body()).isEmpty();
+
+        Map<String, Object> profile = JsonPath.read(
+                get("/accounts/" + id), "$.data"
+        );
+
+        assertThat(((Number) profile.get("id")).longValue()).isEqualTo(id);
+        assertThat(profile.get("username")).isEqualTo("UpdatedUser");
+        assertThat(profile.get("email")).isEqualTo("update.target@example.test");
+        assertThat(profile.get("phoneNumber")).isEqualTo("6900000021");
+        assertThat(profile.get("age")).isEqualTo(31);
+        assertThat(profile.get("address")).isEqualTo("Demo Street 21");
+        assertThat(profile.get("city")).isEqualTo("Patras");
+        assertThat(profile).doesNotContainKey("password");
+
+        var stored = accountRepository.findById(id).orElseThrow();
+        assertThat(stored.getPassword()).isEqualTo("original-secret");
+
+        String invalidBody = updateBody.replace("\"UpdatedUser\"", "\" \"");
+
+        assertThat(putAccount(id, invalidBody).statusCode()).isEqualTo(400);
+
+        Map<String, Object> afterInvalidUpdate = JsonPath.read(
+                get("/accounts/" + id), "$.data"
+        );
+        assertThat(afterInvalidUpdate).isEqualTo(profile);
+
+        var missing = putAccount(Long.MAX_VALUE, updateBody);
+
+        assertThat(missing.statusCode()).isEqualTo(404);
+        assertThat(
+                JsonPath.<Integer>read(missing.body(), "$.apiError.httpStatus")
+        ).isEqualTo(404);
+
+        assertThat(
+                JsonPath.<List<?>>read(get("/accounts"), "$.data")
+        ).hasSize(initialCount);
+    }
+
+    private HttpResponse<String> putAccount(
+            long id,
+            String body
+    ) throws Exception {
+        String port = environment.getRequiredProperty("local.server.port");
+
+        var request = HttpRequest.newBuilder(
+                        URI.create(
+                                "http://127.0.0.1:" + port + "/accounts/" + id
+                        )
+                )
+                .header("Content-Type", "application/json")
+                .timeout(java.time.Duration.ofSeconds(15))
+                .PUT(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        return client.send(
+                request,
+                HttpResponse.BodyHandlers.ofString()
+        );
     }
 }

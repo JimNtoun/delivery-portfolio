@@ -2,6 +2,7 @@ package com.acme.delivery.controller;
 
 import com.acme.delivery.domain.Account;
 import com.acme.delivery.dto.AccountResponse;
+import com.acme.delivery.dto.UpdateAccountRequest;
 import com.acme.delivery.mapper.AccountMapper;
 import com.acme.delivery.service.AccountService;
 import com.acme.delivery.transfer.ApiResponse;
@@ -108,10 +109,13 @@ public class AccountController {
                 );
     }
 
-    @PutMapping
+    @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void update(@Valid @RequestBody Account account) {
-        accountService.update(account);
+    public void update(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody UpdateAccountRequest request
+    ) {
+        accountService.updateProfile(id, request);
     }
 
     @DeleteMapping("/{id}")
