@@ -193,18 +193,39 @@ class BackendMigrationTest {
     }
 
     private String postAccount(String body, boolean batch) throws Exception {
+        var response = postAccountResponse(body, batch);
+
+        assertThat(response.statusCode())
+                .as("POST /accounts (batch=%s): %s", batch, response.body())
+                .isEqualTo(201);
+
+        return response.body();
+    }
+
+    private HttpResponse<String> postAccountResponse(
+            String body,
+            boolean batch
+    ) throws Exception {
         String port = environment.getRequiredProperty("local.server.port");
-        var builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/accounts"))
+
+        var builder = HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port + "/accounts")
+                )
                 .header("Content-Type", "application/json")
                 .timeout(java.time.Duration.ofSeconds(15));
+
         if (batch) {
             builder.header("content", "list");
         }
-        var request = builder.POST(HttpRequest.BodyPublishers.ofString(body)).build();
-        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        assertThat(response.statusCode()).as("POST /accounts (batch=%s): %s", batch, response.body())
-                .isEqualTo(201);
-        return response.body();
+
+        var request = builder
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        return client.send(
+                request,
+                HttpResponse.BodyHandlers.ofString()
+        );
     }
 
     @Test
@@ -490,5 +511,110 @@ class BackendMigrationTest {
         });
 
         assertThat(response.body()).doesNotContain("tiny!");
+    }
+
+    @Test
+    void duplicateAccountDetailsReturnConflictWithoutSaving() throws Exception {
+        String original = """
+            {
+              "username":"ConflictOwner",
+              "password":"test-only-secret",
+              "email":"conflict.owner@example.test",
+              "phoneNumber":"6900000040",
+              "age":30,
+              "address":"Demo Street 40",
+              "city":"Athens"
+            }
+            """;
+
+        postAccount(original, false);
+
+        int initialCount = JsonPath.<List<?>>read(
+                get("/accounts"), "$.data"
+        ).size();
+
+        String duplicateEmail = original
+                .replace("ConflictOwner", "OtherUser")
+                .replace("6900000040", "6900000041");
+
+        String duplicatePhone = original
+                .replace("ConflictOwner", "OtherUser")
+                .replace(
+                        "conflict.owner@example.test",
+                        "conflict.other@example.test"
+                );
+
+        for (String body : List.of(duplicateEmail, duplicatePhone)) {
+            var response = postAccountResponse(body, false);
+
+            assertThat(response.statusCode()).isEqualTo(409);
+
+            assertThat(
+                    JsonPath.<Integer>read(
+                            response.body(),
+                            "$.apiError.httpStatus"
+                    )
+            ).isEqualTo(409);
+
+            assertThat(
+                    JsonPath.<String>read(response.body(), "$.apiError.path")
+            ).isEqualTo("/accounts");
+
+            assertThat(response.body())
+                    .doesNotContain("test-only-secret")
+                    .doesNotContain("uk_accounts");
+
+            assertThat(
+                    JsonPath.<List<?>>read(get("/accounts"), "$.data")
+            ).hasSize(initialCount);
+        }
+    }
+
+    @Test
+    void conflictingBatchDoesNotSaveAnyOfItsAccounts() throws Exception {
+        String owner = """
+            {
+              "username":"BatchOwner",
+              "password":"test-only-secret",
+              "email":"batch.owner@example.test",
+              "phoneNumber":"6900000050",
+              "age":30,
+              "address":"Demo Street 50",
+              "city":"Athens"
+            }
+            """;
+
+        postAccount(owner, false);
+
+        int initialCount = JsonPath.<List<?>>read(
+                get("/accounts"), "$.data"
+        ).size();
+
+        String newAccount = owner
+                .replace("BatchOwner", "BatchNew")
+                .replace("batch.owner@example.test", "batch.new@example.test")
+                .replace("6900000050", "6900000051");
+
+        String conflictingAccount = owner
+                .replace("BatchOwner", "BatchConflict")
+                .replace("6900000050", "6900000052");
+
+        String batch = "{\"accounts\":["
+                + newAccount
+                + ","
+                + conflictingAccount
+                + "]}";
+
+        var response = postAccountResponse(batch, true);
+
+        assertThat(response.statusCode()).isEqualTo(409);
+
+        assertThat(
+                JsonPath.<List<?>>read(get("/accounts"), "$.data")
+        ).hasSize(initialCount);
+
+        assertThat(
+                accountRepository.findByEmail("batch.new@example.test")
+        ).isNull();
     }
 }
